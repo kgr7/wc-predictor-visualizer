@@ -520,6 +520,10 @@ body {
   view-transition-name: overall-view;
 }
 
+#picks-view {
+  view-transition-name: picks-view;
+}
+
 .flex-header {
   display: flex;
   justify-content: space-between;
@@ -532,6 +536,37 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+/* Picks table goal-tier row colours */
+.row-goals-high {
+  background-color: rgba(220, 38, 38, 0.14);
+}
+
+.row-goals-mid {
+  background-color: rgba(239, 68, 68, 0.07);
+}
+
+.row-goals-low {
+  background-color: rgba(251, 191, 36, 0.18);
+}
+
+/* Score display in picks table */
+.score-cell {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+.picks-table td {
+  vertical-align: middle;
+}
+
+.picks-table .team-away {
+  text-align: right;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 /* Responsive Overrides */

@@ -1,6 +1,6 @@
 import { parsePredictorData } from '../parser';
 import { calculateStandings, SortedGroup } from '../standings';
-import { TeamStats } from '../types';
+import { TeamStats, Match } from '../types';
 
 interface OverallTeamStats extends TeamStats {
   groupName: string;
@@ -21,16 +21,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Tabs & Views
   const tabGroups = document.getElementById('tab-groups') as HTMLButtonElement;
   const tabOverall = document.getElementById('tab-overall') as HTMLButtonElement;
+  const tabPicks = document.getElementById('tab-picks') as HTMLButtonElement;
   const groupsView = document.getElementById('groups-view') as HTMLDivElement;
   const overallView = document.getElementById('overall-view') as HTMLDivElement;
+  const picksView = document.getElementById('picks-view') as HTMLDivElement;
   const overallTbody = document.getElementById('overall-tbody') as HTMLTableSectionElement;
+  const picksTbody = document.getElementById('picks-tbody') as HTMLTableSectionElement;
   const resetSortBtn = document.getElementById('reset-sort-btn') as HTMLButtonElement;
 
   // Cached state
+  let cachedMatches: Match[] = [];
   let overallTeams: OverallTeamStats[] = [];
   let activeSortKey: string = DEFAULT_SORT_KEY;
   let activeSortOrder: 'asc' | 'desc' = DEFAULT_SORT_ORDER;
-  let activeTab: 'groups' | 'overall' = 'groups';
+  let activeTab: 'groups' | 'overall' | 'picks' = 'groups';
 
   // Helper to run DOM mutation inside a view transition if supported
   function withTransition(fn: () => void) {
@@ -42,27 +46,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Tab switching
+  function setAllTabsInactive() {
+    [tabGroups, tabOverall, tabPicks].forEach(t => t.classList.remove('active'));
+    [groupsView, overallView, picksView].forEach(v => v.classList.add('hidden'));
+  }
+
   tabGroups.addEventListener('click', () => {
     if (activeTab === 'groups') return;
     activeTab = 'groups';
-    tabGroups.classList.add('active');
-    tabOverall.classList.remove('active');
     withTransition(() => {
+      setAllTabsInactive();
+      tabGroups.classList.add('active');
       groupsView.classList.remove('hidden');
-      overallView.classList.add('hidden');
     });
   });
 
   tabOverall.addEventListener('click', () => {
     if (activeTab === 'overall') return;
     activeTab = 'overall';
-    tabOverall.classList.add('active');
-    tabGroups.classList.remove('active');
     withTransition(() => {
+      setAllTabsInactive();
+      tabOverall.classList.add('active');
       overallView.classList.remove('hidden');
-      groupsView.classList.add('hidden');
     });
     renderOverall();
+  });
+
+  tabPicks.addEventListener('click', () => {
+    if (activeTab === 'picks') return;
+    activeTab = 'picks';
+    withTransition(() => {
+      setAllTabsInactive();
+      tabPicks.classList.add('active');
+      picksView.classList.remove('hidden');
+    });
   });
 
   // Reset sort button
@@ -125,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const matches = parsePredictorData(new Uint8Array(data));
         if (matches.length === 0) throw new Error('No valid fixtures found in the spreadsheet.');
 
+        cachedMatches = matches;
         const standings = calculateStandings(matches);
 
         // Aggregate all teams for overall view
@@ -141,14 +159,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderGroups(standings);
         renderOverall();
+        renderPicks();
         resultsSection.classList.remove('hidden');
 
         // Reset to groups tab
         activeTab = 'groups';
-        tabGroups.classList.add('active');
-        tabOverall.classList.remove('active');
-        groupsView.classList.remove('hidden');
-        overallView.classList.add('hidden');
+        withTransition(() => {
+          setAllTabsInactive();
+          tabGroups.classList.add('active');
+          groupsView.classList.remove('hidden');
+        });
 
         showSuccess(`Successfully analyzed: ${file.name}`);
       } catch (err: any) {
@@ -309,4 +329,42 @@ document.addEventListener('DOMContentLoaded', () => {
       renderOverall();
     });
   });
+
+  function renderPicks() {
+    picksTbody.innerHTML = '';
+
+    const sorted = [...cachedMatches].sort((a, b) => a.matchNum - b.matchNum);
+
+    for (const m of sorted) {
+      const hasScore = m.homeScore !== undefined && m.awayScore !== undefined;
+      const totalGoals = hasScore ? m.homeScore! + m.awayScore! : null;
+
+      // Determine row colour class
+      let rowClass = '';
+      if (totalGoals !== null) {
+        if (totalGoals === 0) rowClass = '';
+        else if (totalGoals <= 2) rowClass = 'row-goals-low';
+        else if (totalGoals <= 4) rowClass = 'row-goals-mid';
+        else rowClass = 'row-goals-high';
+      }
+
+      const scoreDisplay = hasScore
+        ? `${m.homeScore} – ${m.awayScore}`
+        : '–';
+
+      const row = document.createElement('tr');
+      if (rowClass) row.className = rowClass;
+
+      row.innerHTML = `
+        <td class="text-center">${m.matchNum}</td>
+        <td class="text-center">${m.group}</td>
+        <td class="team-cell">${m.homeTeam}</td>
+        <td class="text-center score-cell">${scoreDisplay}</td>
+        <td class="team-away">${m.awayTeam}</td>
+        <td class="text-center">${totalGoals !== null ? totalGoals : '–'}</td>
+      `;
+
+      picksTbody.appendChild(row);
+    }
+  }
 });
