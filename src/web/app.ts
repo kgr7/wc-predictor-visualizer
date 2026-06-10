@@ -1,5 +1,13 @@
 import { parsePredictorData } from '../parser';
 import { calculateStandings, SortedGroup } from '../standings';
+import { TeamStats } from '../types';
+
+interface OverallTeamStats extends TeamStats {
+  groupName: string;
+}
+
+const DEFAULT_SORT_KEY = 'pts';
+const DEFAULT_SORT_ORDER: 'asc' | 'desc' = 'desc';
 
 document.addEventListener('DOMContentLoaded', () => {
   const dropZone = document.getElementById('drop-zone') as HTMLDivElement;
@@ -9,6 +17,60 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusMessage = document.getElementById('status-message') as HTMLParagraphElement;
   const resultsSection = document.getElementById('results-section') as HTMLDivElement;
   const groupsGrid = document.getElementById('groups-grid') as HTMLDivElement;
+
+  // Tabs & Views
+  const tabGroups = document.getElementById('tab-groups') as HTMLButtonElement;
+  const tabOverall = document.getElementById('tab-overall') as HTMLButtonElement;
+  const groupsView = document.getElementById('groups-view') as HTMLDivElement;
+  const overallView = document.getElementById('overall-view') as HTMLDivElement;
+  const overallTbody = document.getElementById('overall-tbody') as HTMLTableSectionElement;
+  const resetSortBtn = document.getElementById('reset-sort-btn') as HTMLButtonElement;
+
+  // Cached state
+  let overallTeams: OverallTeamStats[] = [];
+  let activeSortKey: string = DEFAULT_SORT_KEY;
+  let activeSortOrder: 'asc' | 'desc' = DEFAULT_SORT_ORDER;
+  let activeTab: 'groups' | 'overall' = 'groups';
+
+  // Helper to run DOM mutation inside a view transition if supported
+  function withTransition(fn: () => void) {
+    if ('startViewTransition' in document) {
+      (document as any).startViewTransition(fn);
+    } else {
+      fn();
+    }
+  }
+
+  // Tab switching
+  tabGroups.addEventListener('click', () => {
+    if (activeTab === 'groups') return;
+    activeTab = 'groups';
+    tabGroups.classList.add('active');
+    tabOverall.classList.remove('active');
+    withTransition(() => {
+      groupsView.classList.remove('hidden');
+      overallView.classList.add('hidden');
+    });
+  });
+
+  tabOverall.addEventListener('click', () => {
+    if (activeTab === 'overall') return;
+    activeTab = 'overall';
+    tabOverall.classList.add('active');
+    tabGroups.classList.remove('active');
+    withTransition(() => {
+      overallView.classList.remove('hidden');
+      groupsView.classList.add('hidden');
+    });
+    renderOverall();
+  });
+
+  // Reset sort button
+  resetSortBtn.addEventListener('click', () => {
+    activeSortKey = DEFAULT_SORT_KEY;
+    activeSortOrder = DEFAULT_SORT_ORDER;
+    renderOverall();
+  });
 
   // Handle browse button click
   browseBtn.addEventListener('click', () => {
@@ -35,16 +97,12 @@ document.addEventListener('DOMContentLoaded', () => {
   dropZone.addEventListener('drop', (e) => {
     const dt = e.dataTransfer;
     const files = dt?.files;
-    if (files && files.length > 0) {
-      processFile(files[0]);
-    }
+    if (files && files.length > 0) processFile(files[0]);
   });
 
   fileInput.addEventListener('change', () => {
     const files = fileInput.files;
-    if (files && files.length > 0) {
-      processFile(files[0]);
-    }
+    if (files && files.length > 0) processFile(files[0]);
   });
 
   function processFile(file: File) {
@@ -56,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showSuccess(`Processing: ${file.name}...`);
 
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
@@ -65,22 +123,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const matches = parsePredictorData(new Uint8Array(data));
-        if (matches.length === 0) {
-          throw new Error('No valid fixtures found in the spreadsheet.');
-        }
+        if (matches.length === 0) throw new Error('No valid fixtures found in the spreadsheet.');
 
         const standings = calculateStandings(matches);
-        renderStandings(standings);
+
+        // Aggregate all teams for overall view
+        overallTeams = [];
+        for (const g of standings) {
+          for (const t of g.teams) {
+            overallTeams.push({ ...t, groupName: g.groupName });
+          }
+        }
+
+        // Reset sort state
+        activeSortKey = DEFAULT_SORT_KEY;
+        activeSortOrder = DEFAULT_SORT_ORDER;
+
+        renderGroups(standings);
+        renderOverall();
+        resultsSection.classList.remove('hidden');
+
+        // Reset to groups tab
+        activeTab = 'groups';
+        tabGroups.classList.add('active');
+        tabOverall.classList.remove('active');
+        groupsView.classList.remove('hidden');
+        overallView.classList.add('hidden');
+
         showSuccess(`Successfully analyzed: ${file.name}`);
       } catch (err: any) {
         showError(err.message || 'An error occurred while parsing the spreadsheet.');
       }
     };
 
-    reader.onerror = () => {
-      showError('Failed to read file.');
-    };
-
+    reader.onerror = () => showError('Failed to read file.');
     reader.readAsArrayBuffer(file);
   }
 
@@ -95,29 +171,24 @@ document.addEventListener('DOMContentLoaded', () => {
     statusMessage.textContent = msg;
   }
 
-  function renderStandings(groups: SortedGroup[]) {
+  function renderGroups(groups: SortedGroup[]) {
     groupsGrid.innerHTML = '';
-    resultsSection.classList.remove('hidden');
 
     for (const g of groups) {
       const card = document.createElement('div');
       card.className = 'group-card';
 
-      // Header
       const header = document.createElement('div');
       header.className = 'group-card-header';
       header.textContent = g.groupName;
       card.appendChild(header);
 
-      // Table Wrapper
       const tableResponsive = document.createElement('div');
       tableResponsive.className = 'table-responsive';
 
-      // Table
       const table = document.createElement('table');
       table.className = 'standings-table';
 
-      // Table Head
       table.innerHTML = `
         <thead>
           <tr>
@@ -135,17 +206,12 @@ document.addEventListener('DOMContentLoaded', () => {
         </thead>
       `;
 
-      // Table Body
       const tbody = document.createElement('tbody');
       g.teams.forEach((t, idx) => {
         const row = document.createElement('tr');
-        const isQualified = idx < 2;
-        if (isQualified) {
-          row.className = 'row-qualified';
-        }
+        if (idx < 2) row.className = 'row-qualified';
 
         const gdVal = t.gd > 0 ? `+${t.gd}` : `${t.gd}`;
-
         row.innerHTML = `
           <td>${idx + 1}</td>
           <td class="team-cell">${t.team}</td>
@@ -167,4 +233,80 @@ document.addEventListener('DOMContentLoaded', () => {
       groupsGrid.appendChild(card);
     }
   }
+
+  function renderOverall() {
+    overallTbody.innerHTML = '';
+
+    const sorted = sortTeams(overallTeams, activeSortKey, activeSortOrder);
+
+    // Update sort icons on headers
+    document.querySelectorAll('.sortable-table th.sortable').forEach(h => {
+      const col = h.getAttribute('data-sort');
+      const iconSpan = h.querySelector('.sort-icon') as HTMLSpanElement;
+      iconSpan.textContent = col === activeSortKey
+        ? (activeSortOrder === 'asc' ? ' ▲' : ' ▼')
+        : '';
+    });
+
+    sorted.forEach((t, idx) => {
+      const row = document.createElement('tr');
+      const gdVal = t.gd > 0 ? `+${t.gd}` : `${t.gd}`;
+      row.innerHTML = `
+        <td class="text-center">${idx + 1}</td>
+        <td class="team-cell">${t.team}</td>
+        <td class="text-center">${t.groupName}</td>
+        <td class="text-center">${t.pld}</td>
+        <td class="text-center">${t.w}</td>
+        <td class="text-center">${t.d}</td>
+        <td class="text-center">${t.l}</td>
+        <td class="text-center">${t.gf}</td>
+        <td class="text-center">${t.ga}</td>
+        <td class="text-center">${gdVal}</td>
+        <td class="text-right pts-cell">${t.pts}</td>
+      `;
+      overallTbody.appendChild(row);
+    });
+  }
+
+  function sortTeams(teams: OverallTeamStats[], key: string, order: 'asc' | 'desc'): OverallTeamStats[] {
+    return [...teams].sort((a, b) => {
+      let valA = a[key as keyof OverallTeamStats];
+      let valB = b[key as keyof OverallTeamStats];
+
+      // String sort
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        const cmp = valA.toLowerCase().localeCompare(valB.toLowerCase());
+        if (cmp !== 0) return order === 'asc' ? cmp : -cmp;
+      }
+
+      // Numeric sort
+      if (typeof valA === 'number' && typeof valB === 'number' && valA !== valB) {
+        return order === 'asc' ? valA - valB : valB - valA;
+      }
+
+      // Tiebreaker: pts desc → ga asc (fewer goals against = better) → gd desc → gf desc → name asc
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (a.ga !== b.ga) return a.ga - b.ga;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      return a.team.localeCompare(b.team);
+    });
+  }
+
+  // Bind sortable column header clicks (pos, team, group are NOT sortable)
+  document.querySelectorAll('.sortable-table th.sortable').forEach(h => {
+    h.addEventListener('click', () => {
+      const col = h.getAttribute('data-sort');
+      if (!col) return;
+
+      if (col === activeSortKey) {
+        activeSortOrder = activeSortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        activeSortKey = col;
+        activeSortOrder = 'desc'; // numerics default desc
+      }
+
+      renderOverall();
+    });
+  });
 });
