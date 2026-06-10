@@ -14,8 +14,8 @@
   },
   "include": [
     "src/**/*",
-    "tests/standings.test.ts",
-    "tests/parser.test.ts"
+    "../tests/standings.test.ts",
+    "../tests/parser.test.ts"
   ],
   "exclude": [
     "src/web/**/*",
