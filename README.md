@@ -1,4 +1,5 @@
 # World Cup Predictor Visualizer
+[View on GitHub Pages](https://kgr7.github.io/wc-predictor-visualizer/)
 
 CLI tool to calculate and visualize group stage standings from a completed predictor spreadsheet.
 
