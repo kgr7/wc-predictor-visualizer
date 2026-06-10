@@ -366,5 +366,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       picksTbody.appendChild(row);
     }
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td colspan="7" class="team-away">
+        Total Goals: ${sorted.reduce((sum, m) => {
+      if (m.homeScore !== undefined && m.awayScore !== undefined) {
+        return sum + m.homeScore + m.awayScore;
+      }
+      return sum;
+    }, 0)}
+      </td>
+    `;
+    picksTbody.appendChild(row);
   }
 });
