@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Stylesheets -->
-  <script type="module" crossorigin src="./assets/index-fC4tWlZy.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CQ3UR08R.css">
+  <script type="module" crossorigin src="./assets/index-DOtSm7r7.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-D2U7uFMG.css">
 </head>
 <body>
   <div class="app-container">
@@ -52,7 +52,8 @@
       <section id="results-section" class="results-section hidden">
         <div class="tabs-container">
           <button id="tab-groups" class="tab-btn active" type="button">Group Stage</button>
-          <button id="tab-overall" class="tab-btn" type="button">Overall Standings</button>
+          <button id="tab-overall" class="tab-btn" type="button">Overall</button>
+          <button id="tab-picks" class="tab-btn" type="button">Picks</button>
         </div>
 
         <div id="groups-view" class="view-pane">
@@ -94,6 +95,29 @@
               </thead>
               <tbody id="overall-tbody">
                 <!-- Dynamically populated team rows will go here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="picks-view" class="view-pane hidden">
+          <div class="results-header">
+            <h2>Picks</h2>
+          </div>
+          <div class="table-responsive card-table-wrapper">
+            <table class="standings-table picks-table">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width: 6%;">#</th>
+                  <th class="text-center" style="width: 12%;">Group</th>
+                  <th style="width: 30%;">Home</th>
+                  <th class="text-center" style="width: 14%;">Score</th>
+                  <th class="text-right" style="width: 30%;">Away</th>
+                  <th class="text-center" style="width: 8%;">Goals</th>
+                </tr>
+              </thead>
+              <tbody id="picks-tbody">
+                <!-- Dynamically populated fixture rows will go here -->
               </tbody>
             </table>
           </div>
