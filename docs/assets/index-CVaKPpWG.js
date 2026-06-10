@@ -80,4 +80,8 @@ var e=(e,t)=>()=>(e&&(t=e(e=0)),t),t=(e,t)=>()=>(t||(e((t={exports:{}}).exports,
         <td class="text-center score-cell">${i}</td>
         <td class="team-away">${t.awayTeam}</td>
         <td class="text-center">${n===null?`–`:n}</td>
-      `,g.appendChild(a)}}})}))();
+      `,g.appendChild(a)}let t=document.createElement(`tr`);t.innerHTML=`
+      <td colspan="7" class="team-away">
+        Total Goals: ${e.reduce((e,t)=>t.homeScore!==void 0&&t.awayScore!==void 0?e+t.homeScore+t.awayScore:e,0)}
+      </td>
+    `,g.appendChild(t)}})}))();
