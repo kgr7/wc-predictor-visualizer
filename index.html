@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Cup Predictor Standings Visualizer</title>
+  <!-- SEO & Meta Tags -->
+  <meta name="description" content="A simple, elegant Single Page Application to calculate and visualize group stage standings from your World Cup predictor spreadsheet.">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./src/web/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo-area">
+        <span class="trophy-emoji">🏆</span>
+        <h1>World Cup Predictor</h1>
+      </div>
+      <p class="subtitle">Calculate and visualize group stage standings instantly from your spreadsheet</p>
+    </header>
+
+    <main class="app-main">
+      <!-- Upload Zone -->
+      <section class="upload-section">
+        <div id="drop-zone" class="drop-zone">
+          <input type="file" id="file-input" accept=".xlsx" class="file-input">
+          <div class="drop-zone-content">
+            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p class="upload-title">Drag & drop your predictor spreadsheet here</p>
+            <p class="upload-or">or</p>
+            <button id="browse-btn" class="btn btn-primary" type="button">Browse Files</button>
+            <p class="upload-hint">Supports .xlsx predictor files</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Status Alert -->
+      <div id="status-alert" class="status-alert hidden" role="alert">
+        <p id="status-message"></p>
+      </div>
+
+      <!-- Standings View Section -->
+      <section id="results-section" class="results-section hidden">
+        <div class="results-header">
+          <h2>Group Stage Standings</h2>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot legend-qualified"></span> Qualified (Top 2)</span>
+          </div>
+        </div>
+        <div id="groups-grid" class="groups-grid">
+          <!-- Dynamically populated group cards will go here -->
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>World Cup Predictor Visualizer &bull; Client-side calculation &bull; No data is sent to any server</p>
+    </footer>
+  </div>
+
+  <!-- Main JavaScript App Entrypoint -->
+  <script type="module" src="./src/web/app.ts"></script>
+</body>
+</html>

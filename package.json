@@ -1,0 +1,30 @@
+{
+  "name": "world-cup-predictor",
+  "version": "1.0.0",
+  "description": "Visualize World Cup group stage predictor standings",
+  "main": "dist/index.js",
+  "bin": {
+    "predictor": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "test": "vitest run",
+    "dev": "vite",
+    "build:web": "vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}
