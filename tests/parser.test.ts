@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
-import { parsePredictorData } from '../src/parser';
+import { parsePredictorData, calculatePredictorPoints, calculateMatchPoints } from '../src/parser';
 
 describe('parsePredictorData', () => {
   it('correctly parses valid spreadsheet rows and ignores invalid ones', () => {
@@ -51,5 +51,105 @@ describe('parsePredictorData', () => {
       homeScore: 1,
       awayScore: 1,
     });
+  });
+});
+
+describe('calculatePredictorPoints', () => {
+  it('correctly calculates points for various prediction and actual score scenarios', () => {
+    // 5 points: correct outcome, correct home goals, correct away goals
+    expect(calculatePredictorPoints(2, 1, 2, 1)).toBe(5);
+    expect(calculatePredictorPoints(0, 0, 0, 0)).toBe(5);
+
+    // 4 points: correct outcome, correct home goals, incorrect away goals
+    expect(calculatePredictorPoints(3, 0, 3, 2)).toBe(4);
+    // 4 points: correct outcome, incorrect home goals, correct away goals
+    expect(calculatePredictorPoints(1, 2, 0, 2)).toBe(4);
+
+    // 3 points: correct outcome (draw), incorrect home goals, incorrect away goals
+    expect(calculatePredictorPoints(2, 2, 1, 1)).toBe(3);
+    // 3 points: correct outcome (home win), incorrect home/away goals
+    expect(calculatePredictorPoints(2, 0, 3, 1)).toBe(3);
+
+    // 2 points: incorrect outcome, correct home goals, correct away goals
+    // Wait, is it mathematically possible to get 2 points (both goals correct but incorrect outcome)?
+    // If pred is 2-1 and act is 1-2: outcome is diff (home vs away win). Home goals incorrect (2!=1), away goals incorrect (1!=2). Points = 0.
+    // If pred is 2-2 (draw) and act is 2-1 (home win): outcome is diff (draw vs home win). Home goals correct (2==2), away goals incorrect (2!=1). Points = 1.
+    // Wait! Can you get both home and away goals correct, but have a different outcome?
+    // If predHome === actHome and predAway === actAway, then the outcome (win/loss/draw) MUST be the same because the scores are identical.
+    // Thus, it is mathematically impossible to get exactly 2 points in this scoring system because if both home and away goals are correct, the scores are identical, meaning the outcome is also correct, giving 5 points.
+    // Therefore, any score of 2 points is impossible!
+
+    // 1 point: incorrect outcome, correct home goals, incorrect away goals
+    expect(calculatePredictorPoints(1, 0, 1, 1)).toBe(1);
+    // 1 point: incorrect outcome, incorrect home goals, correct away goals
+    expect(calculatePredictorPoints(0, 2, 2, 2)).toBe(1);
+
+    // 0 points: incorrect outcome, incorrect home goals, incorrect away goals
+    expect(calculatePredictorPoints(3, 2, 2, 3)).toBe(0);
+    expect(calculatePredictorPoints(1, 0, 2, 3)).toBe(0);
+  });
+});
+
+describe('calculateMatchPoints', () => {
+  it('correctly calculates points when team order is identical', () => {
+    const prediction = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    const actual = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 1, awayScore: 0 };
+    expect(calculateMatchPoints(prediction, actual)).toBe(3);
+  });
+
+  it('returns 0 points when team order is swapped', () => {
+    const prediction = { matchNum: 1, group: 'A', homeTeam: 'Austria', awayTeam: 'Spain', homeScore: 1, awayScore: 2 };
+    const actual = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 1, awayScore: 0 };
+    expect(calculateMatchPoints(prediction, actual)).toBe(0);
+  });
+
+  it('returns 0 points if teams do not match at all', () => {
+    const prediction = { matchNum: 1, group: 'A', homeTeam: 'Germany', awayTeam: 'France', homeScore: 1, awayScore: 0 };
+    const actual = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 1, awayScore: 0 };
+    expect(calculateMatchPoints(prediction, actual)).toBe(0);
+  });
+
+  it('returns 4 points for a correct outcome and one correct score, even if the other score is incorrect', () => {
+    const prediction = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    const actual = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 0 };
+    expect(calculateMatchPoints(prediction, actual)).toBe(4);
+  });
+
+  it('returns 5 points for a perfect prediction', () => {
+    const prediction = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    const actual = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    expect(calculateMatchPoints(prediction, actual)).toBe(5);
+  });
+
+  it('returns 0 points if any of the scores are undefined', () => {
+    const prediction = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: undefined, awayScore: 1 };
+    const actual = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    expect(calculateMatchPoints(prediction, actual)).toBe(0);
+
+    const prediction2 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: undefined };
+    const actual2 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    expect(calculateMatchPoints(prediction2, actual2)).toBe(0);
+
+    const prediction3 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    const actual3 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: undefined, awayScore: 1 };
+    expect(calculateMatchPoints(prediction3, actual3)).toBe(0);
+
+    const prediction4 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    const actual4 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: undefined };
+    expect(calculateMatchPoints(prediction4, actual4)).toBe(0);
+  });
+
+  it('returns 0 points if any of the scores are null', () => {
+    const prediction3 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    const actual3 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: null, awayScore: 1 };
+    expect(calculateMatchPoints(prediction3, actual3)).toBe(0);
+
+    const prediction4 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    const actual4 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: null };
+    expect(calculateMatchPoints(prediction4, actual4)).toBe(0);
+
+    const prediction5 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: 2, awayScore: 1 };
+    const actual5 = { matchNum: 1, group: 'A', homeTeam: 'Spain', awayTeam: 'Austria', homeScore: null, awayScore: null };
+    expect(calculateMatchPoints(prediction5, actual5)).toBe(0);
   });
 });

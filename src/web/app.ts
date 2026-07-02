@@ -1,4 +1,4 @@
-import { parsePredictorData } from '../parser';
+import { parsePredictorData, parseFifaResults, calculateMatchPoints, normalizeFifaTeamName } from '../parser';
 import { calculateStandings, SortedGroup } from '../standings';
 import { TeamStats, Match } from '../types';
 
@@ -35,6 +35,25 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeSortKey: string = DEFAULT_SORT_KEY;
   let activeSortOrder: 'asc' | 'desc' = DEFAULT_SORT_ORDER;
   let activeTab: 'groups' | 'overall' | 'picks' = 'groups';
+  let fifaResults: Match[] = [];
+
+  // Fetch FIFA results once when DOM loads
+  fetch('./rounds.json')
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Failed to load rounds.json: ${res.status} ${res.statusText}`);
+      }
+      return res.json();
+    })
+    .then(data => {
+      fifaResults = parseFifaResults(data);
+      if (cachedMatches.length > 0) {
+        renderPicks();
+      }
+    })
+    .catch(err => {
+      console.error('Error loading rounds.json:', err);
+    });
 
   // Helper to run DOM mutation inside a view transition if supported
   function withTransition(fn: () => void) {
@@ -114,70 +133,104 @@ document.addEventListener('DOMContentLoaded', () => {
   dropZone.addEventListener('drop', (e) => {
     const dt = e.dataTransfer;
     const files = dt?.files;
-    if (files && files.length > 0) processFile(files[0]);
+    if (files && files.length > 0) processFiles(files);
   });
 
   fileInput.addEventListener('change', () => {
     const files = fileInput.files;
-    if (files && files.length > 0) processFile(files[0]);
+    if (files && files.length > 0) processFiles(files);
   });
 
-  function processFile(file: File) {
-    if (!file.name.endsWith('.xlsx')) {
-      showError('Please upload a valid .xlsx spreadsheet.');
+  function mergeMatches(newMatches: Match[]) {
+    const matchMap = new Map<number, Match>();
+    for (const m of cachedMatches) {
+      matchMap.set(m.matchNum, m);
+    }
+    for (const m of newMatches) {
+      matchMap.set(m.matchNum, m);
+    }
+    cachedMatches = Array.from(matchMap.values());
+  }
+
+  function processFiles(files: FileList | File[]) {
+    const filesArray = Array.from(files);
+    const validFiles = filesArray.filter(f => f.name.endsWith('.xlsx'));
+
+    if (validFiles.length === 0) {
+      showError('Please upload valid .xlsx spreadsheets.');
       return;
     }
 
-    showSuccess(`Processing: ${file.name}...`);
+    showSuccess(`Processing ${validFiles.length} file(s)...`);
 
-    const reader = new FileReader();
+    let processedCount = 0;
+    const allNewMatches: Match[] = [];
+    let hasError = false;
 
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        if (!data || !(data instanceof ArrayBuffer)) {
-          throw new Error('Failed to read file as ArrayBuffer.');
-        }
+    validFiles.forEach(file => {
+      const reader = new FileReader();
 
-        const matches = parsePredictorData(new Uint8Array(data));
-        if (matches.length === 0) throw new Error('No valid fixtures found in the spreadsheet.');
-
-        cachedMatches = matches;
-        const standings = calculateStandings(matches);
-
-        // Aggregate all teams for overall view
-        overallTeams = [];
-        for (const g of standings) {
-          for (const t of g.teams) {
-            overallTeams.push({ ...t, groupName: g.groupName });
+      reader.onload = (e) => {
+        if (hasError) return;
+        try {
+          const data = e.target?.result;
+          if (!data || !(data instanceof ArrayBuffer)) {
+            throw new Error(`Failed to read ${file.name} as ArrayBuffer.`);
           }
+
+          const matches = parsePredictorData(new Uint8Array(data));
+          if (matches.length === 0) {
+            throw new Error(`No valid fixtures found in ${file.name}.`);
+          }
+
+          allNewMatches.push(...matches);
+          processedCount++;
+
+          if (processedCount === validFiles.length) {
+            mergeMatches(allNewMatches);
+
+            const groupStageMatches = cachedMatches.filter(m => m.group.toLowerCase().startsWith('group'));
+            const standings = calculateStandings(groupStageMatches);
+
+            // Aggregate all teams for overall view
+            overallTeams = [];
+            for (const g of standings) {
+              for (const t of g.teams) {
+                overallTeams.push({ ...t, groupName: g.groupName });
+              }
+            }
+
+            renderGroups(standings);
+            renderOverall();
+            renderPicks();
+
+            const wasHidden = resultsSection.classList.contains('hidden');
+            resultsSection.classList.remove('hidden');
+
+            if (wasHidden) {
+              activeTab = 'groups';
+              withTransition(() => {
+                setAllTabsInactive();
+                tabGroups.classList.add('active');
+                groupsView.classList.remove('hidden');
+              });
+            }
+
+            showSuccess(`Successfully processed ${validFiles.length} file(s).`);
+          }
+        } catch (err: any) {
+          hasError = true;
+          showError(err.message || 'An error occurred while parsing the spreadsheets.');
         }
+      };
 
-        // Reset sort state
-        activeSortKey = DEFAULT_SORT_KEY;
-        activeSortOrder = DEFAULT_SORT_ORDER;
+      reader.onerror = () => {
+        hasError = true;
+        showError(`Failed to read file: ${file.name}`);
+      };
 
-        renderGroups(standings);
-        renderOverall();
-        renderPicks();
-        resultsSection.classList.remove('hidden');
-
-        // Reset to groups tab
-        activeTab = 'groups';
-        withTransition(() => {
-          setAllTabsInactive();
-          tabGroups.classList.add('active');
-          groupsView.classList.remove('hidden');
-        });
-
-        showSuccess(`Successfully analyzed: ${file.name}`);
-      } catch (err: any) {
-        showError(err.message || 'An error occurred while parsing the spreadsheet.');
-      }
-    };
-
-    reader.onerror = () => showError('Failed to read file.');
-    reader.readAsArrayBuffer(file);
+      reader.readAsArrayBuffer(file);
+    });
   }
 
   function showError(msg: string) {
@@ -334,21 +387,48 @@ document.addEventListener('DOMContentLoaded', () => {
     picksTbody.innerHTML = '';
 
     const sorted = [...cachedMatches].sort((a, b) => a.matchNum - b.matchNum);
+    let totalPoints = 0;
+    let hasAnyPoints = false;
 
     for (const m of sorted) {
-      const hasScore = m.homeScore !== undefined && m.awayScore !== undefined;
-      const totalGoals = hasScore ? m.homeScore! + m.awayScore! : null;
+      const isGroupStage = m.group.toLowerCase().startsWith('group');
+      const actual = fifaResults.find(r => {
+        // console.log(`comparing predicted: ${m.homeTeam} vs ${m.awayTeam} with actual: ${r.homeTeam} vs ${r.awayTeam}`);
+        const teamsMatch = normalizeFifaTeamName(r.homeTeam) === m.homeTeam &&
+          normalizeFifaTeamName(r.awayTeam) === m.awayTeam;
+        if (!teamsMatch) {
+          return false;
+        }
 
-      // Determine row colour class
+        const isActualGroupStage = r.group !== 'n/a';
+        return isGroupStage === isActualGroupStage;
+      });
+      const hasActualScore = actual !== undefined && actual.homeScore !== undefined && actual.awayScore !== undefined;
+      const hasPredScore = m.homeScore !== undefined && m.awayScore !== undefined;
+
+      let points: number | null = null;
       let rowClass = '';
-      if (totalGoals !== null) {
-        if (totalGoals === 0) rowClass = '';
-        else if (totalGoals <= 2) rowClass = 'row-goals-low';
-        else if (totalGoals <= 4) rowClass = 'row-goals-mid';
-        else rowClass = 'row-goals-high';
+
+      if (hasActualScore && hasPredScore) {
+        points = calculateMatchPoints(m, actual!);
+        totalPoints += points;
+        hasAnyPoints = true;
+
+        // Determine row colour class
+        if (points === 5) {
+          rowClass = 'row-points-5';
+        } else if (points === 4) {
+          rowClass = 'row-points-4';
+        } else if (points === 3) {
+          rowClass = 'row-points-3';
+        } else if (points < 3 && points > 0) {
+          rowClass = 'row-points-low';
+        } else if (points === 0) {
+          rowClass = 'row-points-0';
+        }
       }
 
-      const scoreDisplay = hasScore
+      const scoreDisplay = hasPredScore
         ? `${m.homeScore} – ${m.awayScore}`
         : '–';
 
@@ -361,20 +441,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="team-cell">${m.homeTeam}</td>
         <td class="text-center score-cell">${scoreDisplay}</td>
         <td class="team-away">${m.awayTeam}</td>
-        <td class="text-center">${totalGoals !== null ? totalGoals : '–'}</td>
+        <td class="text-center">${points !== null ? points : '–'}</td>
       `;
 
       picksTbody.appendChild(row);
     }
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td colspan="7" class="team-away">
-        Total Goals: ${sorted.reduce((sum, m) => {
-      if (m.homeScore !== undefined && m.awayScore !== undefined) {
-        return sum + m.homeScore + m.awayScore;
-      }
-      return sum;
-    }, 0)}
+      <td colspan="6" class="team-away">
+        Total Points: ${hasAnyPoints ? totalPoints : '–'}
       </td>
     `;
     picksTbody.appendChild(row);

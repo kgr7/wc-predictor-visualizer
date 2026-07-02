@@ -33,19 +33,20 @@ export function calculateStandings(matches: Match[]): SortedGroup[] {
     home.pld += 1;
     away.pld += 1;
 
-    home.gf += m.homeScore;
-    home.ga += m.awayScore;
-    away.gf += m.awayScore;
-    away.ga += m.homeScore;
+    // predictor matches should never be null
+    home.gf += m.homeScore!;
+    home.ga += m.awayScore!;
+    away.gf += m.awayScore!;
+    away.ga += m.homeScore!;
 
     home.gd = home.gf - home.ga;
     away.gd = away.gf - away.ga;
 
-    if (m.homeScore > m.awayScore) {
+    if (m.homeScore! > m.awayScore!) {
       home.w += 1;
       home.pts += 3;
       away.l += 1;
-    } else if (m.homeScore < m.awayScore) {
+    } else if (m.homeScore! < m.awayScore!) {
       away.w += 1;
       away.pts += 3;
       home.l += 1;
