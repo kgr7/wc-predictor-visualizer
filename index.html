@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>World Cup Predictor Standings Visualizer</title>
   <!-- SEO & Meta Tags -->
-  <meta name="description" content="A simple, elegant Single Page Application to calculate and visualize group stage standings from your World Cup predictor spreadsheet.">
+  <meta name="description"
+    content="A simple, elegant Single Page Application to calculate and visualize group stage standings from your World Cup predictor spreadsheet.">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <!-- Stylesheets -->
   <link rel="stylesheet" href="./src/web/style.css">
 </head>
+
 <body>
   <div class="app-container">
     <header class="app-header">
@@ -27,9 +32,10 @@
       <!-- Upload Zone -->
       <section class="upload-section">
         <div id="drop-zone" class="drop-zone">
-          <input type="file" id="file-input" accept=".xlsx" class="file-input">
+          <input type="file" id="file-input" accept=".xlsx" class="file-input" multiple>
           <div class="drop-zone-content">
-            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="17 8 12 3 7 8"></polyline>
               <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -57,7 +63,7 @@
 
         <div id="groups-view" class="view-pane">
           <div class="results-header">
-            <h2>Group Stage Standings</h2>
+            <h2>Group Stage Standings (as predicted)</h2>
             <div class="legend">
               <span class="legend-item"><span class="legend-dot legend-qualified"></span> Qualified (Top 2)</span>
             </div>
@@ -69,7 +75,7 @@
 
         <div id="overall-view" class="view-pane hidden">
           <div class="results-header flex-header">
-            <h2>Overall Standings</h2>
+            <h2>Overall Standings (group stage only)</h2>
             <div class="header-actions">
               <span class="table-tip">Click columns to sort</span>
               <button id="reset-sort-btn" class="btn btn-secondary btn-sm" type="button">Reset Sort</button>
@@ -82,14 +88,22 @@
                   <th class="text-center" style="width: 6%;">Pos</th>
                   <th style="width: 24%;">Team</th>
                   <th class="text-center" style="width: 10%;">Group</th>
-                  <th class="sortable text-center" data-sort="pld" style="width: 7%;">Pld <span class="sort-icon"></span></th>
-                  <th class="sortable text-center" data-sort="w" style="width: 7%;">W <span class="sort-icon"></span></th>
-                  <th class="sortable text-center" data-sort="d" style="width: 7%;">D <span class="sort-icon"></span></th>
-                  <th class="sortable text-center" data-sort="l" style="width: 7%;">L <span class="sort-icon"></span></th>
-                  <th class="sortable text-center" data-sort="gf" style="width: 7%;">GF <span class="sort-icon"></span></th>
-                  <th class="sortable text-center" data-sort="ga" style="width: 7%;">GA <span class="sort-icon"></span></th>
-                  <th class="sortable text-center" data-sort="gd" style="width: 8%;">GD <span class="sort-icon"></span></th>
-                  <th class="sortable text-right" data-sort="pts" style="width: 10%;">Pts <span class="sort-icon"></span></th>
+                  <th class="sortable text-center" data-sort="pld" style="width: 7%;">Pld <span
+                      class="sort-icon"></span></th>
+                  <th class="sortable text-center" data-sort="w" style="width: 7%;">W <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable text-center" data-sort="d" style="width: 7%;">D <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable text-center" data-sort="l" style="width: 7%;">L <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable text-center" data-sort="gf" style="width: 7%;">GF <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable text-center" data-sort="ga" style="width: 7%;">GA <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable text-center" data-sort="gd" style="width: 8%;">GD <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable text-right" data-sort="pts" style="width: 10%;">Pts <span
+                      class="sort-icon"></span></th>
                 </tr>
               </thead>
               <tbody id="overall-tbody">
@@ -112,7 +126,7 @@
                   <th style="width: 30%;">Home</th>
                   <th class="text-center" style="width: 14%;">Score</th>
                   <th class="text-right" style="width: 30%;">Away</th>
-                  <th class="text-center" style="width: 8%;">Goals</th>
+                  <th class="text-center" style="width: 8%;">Points</th>
                 </tr>
               </thead>
               <tbody id="picks-tbody">
@@ -132,4 +146,5 @@
   <!-- Main JavaScript App Entrypoint -->
   <script type="module" src="./src/web/app.ts"></script>
 </body>
+
 </html>

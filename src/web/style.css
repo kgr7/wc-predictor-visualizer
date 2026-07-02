@@ -538,17 +538,25 @@ body {
   gap: 0.75rem;
 }
 
-/* Picks table goal-tier row colours */
-.row-goals-high {
-  background-color: rgba(220, 38, 38, 0.14);
+/* Picks table points-tier row colours */
+.row-points-5 {
+  background-color: rgba(21, 128, 61, 0.18);
 }
 
-.row-goals-mid {
-  background-color: rgba(239, 68, 68, 0.07);
+.row-points-4 {
+  background-color: rgba(74, 222, 128, 0.18);
 }
 
-.row-goals-low {
-  background-color: rgba(251, 191, 36, 0.18);
+.row-points-3 {
+  background-color: rgba(253, 224, 71, 0.22);
+}
+
+.row-points-low {
+  background-color: rgba(251, 146, 60, 0.18);
+}
+
+.row-points-0 {
+  background-color: rgba(239, 68, 68, 0.15);
 }
 
 /* Score display in picks table */

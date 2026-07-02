@@ -3,8 +3,8 @@ export interface Match {
   group: string;
   homeTeam: string;
   awayTeam: string;
-  homeScore?: number;
-  awayScore?: number;
+  homeScore?: number | null;
+  awayScore?: number | null;
 }
 
 export interface TeamStats {
