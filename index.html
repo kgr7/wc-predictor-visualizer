@@ -25,7 +25,7 @@
         <span class="trophy-emoji">🏆</span>
         <h1>World Cup Predictor</h1>
       </div>
-      <p class="subtitle">Calculate and visualize group stage standings instantly from your spreadsheet</p>
+      <p class="subtitle">Upload all predictor sheets and view your points. Updated periodically.</p>
     </header>
 
     <main class="app-main">
@@ -40,7 +40,7 @@
               <polyline points="17 8 12 3 7 8"></polyline>
               <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
-            <p class="upload-title">Drag & drop your predictor spreadsheet here</p>
+            <p class="upload-title">Upload all predictor spreadsheets</p>
             <p class="upload-or">or</p>
             <button id="browse-btn" class="btn btn-primary" type="button">Browse Files</button>
             <p class="upload-hint">Supports .xlsx predictor files</p>
@@ -56,9 +56,12 @@
       <!-- Standings View Section -->
       <section id="results-section" class="results-section hidden">
         <div class="tabs-container">
-          <button id="tab-groups" class="tab-btn active" type="button">Group Stage</button>
-          <button id="tab-overall" class="tab-btn" type="button">Overall</button>
-          <button id="tab-picks" class="tab-btn" type="button">Picks</button>
+          <button disabled style="opacity: 0.5; cursor: not-allowed;" id="tab-groups" class="tab-btn"
+            type="button">Group
+            Stage</button>
+          <button disabled style="opacity: 0.5; cursor: not-allowed;" id="tab-overall" class="tab-btn"
+            type="button">Overall</button>
+          <button id="tab-picks" class="tab-btn active" type="button">Picks</button>
         </div>
 
         <div id="groups-view" class="view-pane">
@@ -116,6 +119,12 @@
         <div id="picks-view" class="view-pane hidden">
           <div class="results-header">
             <h2>Picks</h2>
+          </div>
+          <div style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 500;">
+            Total Points: <span id="total-points">–</span>
+            <small style="font-size: 0.9rem; color: #6c757d; margin-left: 1rem;">
+              Results last updated: <span id="last-updated">–</span>
+            </small>
           </div>
           <div class="table-responsive card-table-wrapper">
             <table class="standings-table picks-table">

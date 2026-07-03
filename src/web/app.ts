@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusMessage = document.getElementById('status-message') as HTMLParagraphElement;
   const resultsSection = document.getElementById('results-section') as HTMLDivElement;
   const groupsGrid = document.getElementById('groups-grid') as HTMLDivElement;
+  const totalPointsSpan = document.getElementById('total-points') as HTMLSpanElement;
+  const lastUpdatedSpan = document.getElementById('last-updated') as HTMLSpanElement;
 
   // Tabs & Views
   const tabGroups = document.getElementById('tab-groups') as HTMLButtonElement;
@@ -34,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let overallTeams: OverallTeamStats[] = [];
   let activeSortKey: string = DEFAULT_SORT_KEY;
   let activeSortOrder: 'asc' | 'desc' = DEFAULT_SORT_ORDER;
-  let activeTab: 'groups' | 'overall' | 'picks' = 'groups';
+  let activeTab: 'groups' | 'overall' | 'picks' = 'picks';
   let fifaResults: Match[] = [];
 
   // Fetch FIFA results once when DOM loads
@@ -208,11 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsSection.classList.remove('hidden');
 
             if (wasHidden) {
-              activeTab = 'groups';
+              activeTab = 'picks';
               withTransition(() => {
                 setAllTabsInactive();
-                tabGroups.classList.add('active');
-                groupsView.classList.remove('hidden');
+                tabPicks.classList.add('active');
+                picksView.classList.remove('hidden');
               });
             }
 
@@ -446,12 +448,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       picksTbody.appendChild(row);
     }
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td colspan="6" class="team-away">
         Total Points: ${hasAnyPoints ? totalPoints : '–'}
       </td>
     `;
+
+    totalPointsSpan.textContent = hasAnyPoints ? totalPoints.toString() : '–';
+    lastUpdatedSpan.textContent = __LAST_UPDATED__;
     picksTbody.appendChild(row);
   }
 });
