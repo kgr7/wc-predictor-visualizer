@@ -84,4 +84,4 @@
       <td colspan="6" class="team-away">
         Total Points: ${ae?I:"–"}
       </td>
-    `,c.textContent=ae?I.toString():"–",f.textContent="2026-07-06T08:58:32.213Z",g.appendChild(se)}});
+    `,c.textContent=ae?I.toString():"–",f.textContent="2026-07-20T11:54:12.178Z",g.appendChild(se)}});
